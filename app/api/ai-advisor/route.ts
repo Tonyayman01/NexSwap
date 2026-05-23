@@ -28,7 +28,7 @@ Give exactly 3 insights, each under 15 words.`;
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Bearer ${process.env.OPENROUTER_API_KEY}
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://nexswap.vercel.app",
         "X-Title": "NexSwap",
