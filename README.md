@@ -8,10 +8,10 @@
 ---
 
 ## The Problem
-Most DEX swaps are anonymous and forgotten. You have no memory of your trading history, no insights on your patterns, and no ownership of your data. Centralized platforms store your data — not you.
+Most DEX swaps are anonymous and forgotten. You have no memory of your trading history, no insights on your patterns, and no ownership of your data. Centralized platforms store your data  not you.
 
 ## The Solution
-NexSwap combines **decentralized swapping** with **AI-powered memory**. Every swap is stored as a verifiable blob on Shelby Protocol hot storage, tied to your Aptos wallet. The AI analyzes your swap history and gives personalized insights — data you own, forever.
+NexSwap combines **decentralized swapping** with **AI-powered memory**. Every swap is stored as a verifiable blob on Shelby Protocol hot storage, tied to your Aptos wallet. The AI analyzes your swap history and gives personalized insights  data you own, forever.
 
 ---
 
@@ -19,7 +19,7 @@ NexSwap combines **decentralized swapping** with **AI-powered memory**. Every sw
 
 | Feature | Traditional DEX | NexSwap |
 |---------|----------------|---------|
-| Swap History | Centralized | On Shelby (decentralized) |
+| Swap History | Centralized | On Shelby decentralized 
 | AI Insights | None | After every swap |
 | Data Ownership | Platform | Your wallet |
 | Storage | Database | Shelby hot storage |
