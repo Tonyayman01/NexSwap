@@ -1,7 +1,7 @@
 # NexSwap 🔄
-### AI-Powered Decentralized Swap — Built on Aptos & Shelby Protocol
+### AI Powered Decentralized Swap  Built on Shelby Protocol and aptos
 
-> Swap tokens on Aptos with every transaction permanently saved on Shelby's decentralized hot storage — and get real AI insights after every swap.
+> Swap tokens on Aptos with every transaction permanently saved on Shelby decentralized hot storage  and get real AI insights after every swap.
 
  **Live Demo:** Coming Soon |  **GitHub:** [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap)
 
