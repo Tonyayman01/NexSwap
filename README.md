@@ -3,8 +3,9 @@
 
 > Swap tokens on Aptos with every transaction permanently saved on Shelby decentralized hot storage  and get real AI insights after every swap.
 
- **Live Demo:** Coming Soon |  **GitHub:** [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap)
-
+ **Live Demo:**   [nex-swapshelby.vercel.app] (https://nex-swapshelby.vercel.app)
+ 
+ **GitHub:** [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap)  
 ---
 
 ## The Problem
@@ -101,11 +102,8 @@ APTOS_PRIVATE_KEY=your_private_key
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000)
 
----
-
-## Roadmap 🗺️
+## Roadmap 
 
 - [x] Token swap interface
 - [x] Shelby storage integration
