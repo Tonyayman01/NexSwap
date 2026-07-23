@@ -1,10 +1,24 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Brain, Sparkles, Loader2, TrendingUp } from "lucide-react";
+
+interface SwapPayload {
+  wallet: string;
+  fromToken: string;
+  toToken: string;
+  fromAmount: string;
+  toAmount: string;
+  slippage: string;
+  priceImpact: string;
+  fee: string;
+  timestamp: number;
+  network: string;
+  storage: string;
+}
 
 interface SwapAdvisorProps {
   wallet: string;
-  swaps: any[];
+  swaps: SwapPayload[];
   trigger: number;
 }
 
@@ -12,13 +26,7 @@ export default function SwapAdvisor({ wallet, swaps, trigger }: SwapAdvisorProps
   const [analysis, setAnalysis] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (wallet && trigger > 0) {
-      setTimeout(() => getAnalysis(), 500);
-    }
-  }, [trigger, swaps]);
-
-    const getAnalysis = async () => {
+  const getAnalysis = useCallback(async () => {
     if (!wallet) return;
     console.log("Swaps being sent to AI:", JSON.stringify(swaps));
     setLoading(true);
@@ -30,46 +38,53 @@ export default function SwapAdvisor({ wallet, swaps, trigger }: SwapAdvisorProps
       });
       const data = await response.json();
       setAnalysis(data.analysis);
-    } catch (error) {
+    } catch {
       setAnalysis("Keep swapping to get AI insights!");
     }
     setLoading(false);
-  };
+  }, [swaps, wallet]);
+
+  useEffect(() => {
+    if (wallet && trigger > 0) {
+      const timeoutId = window.setTimeout(() => getAnalysis(), 500);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [getAnalysis, trigger, wallet]);
 
   if (!wallet) return null;
 
   return (
-    <div className="glass rounded-2xl p-4">
-      <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-        <Brain className="w-4 h-4 text-violet-400" />
+    <div className="glass rounded-2xl p-5">
+      <h3 className="mb-4 flex items-center gap-2 font-bold text-white">
+        <Brain className="h-4 w-4 text-violet-300" />
         AI Swap Advisor
-        <Sparkles className="w-3 h-3 text-yellow-400" />
+        <Sparkles className="h-3 w-3 text-amber-300" />
       </h3>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-slate-400 text-sm py-4 justify-center">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="flex items-center justify-center gap-2 py-5 text-sm text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
           Analyzing your swaps...
         </div>
       ) : analysis ? (
         <div className="space-y-2">
           {analysis.split("\n").filter(Boolean).map((line, i) => (
             <div key={i} className="flex items-start gap-2 text-sm">
-              <TrendingUp className="w-3 h-3 text-violet-400 mt-0.5 flex-shrink-0" />
+              <TrendingUp className="mt-0.5 h-3 w-3 flex-shrink-0 text-violet-300" />
               <p className="text-slate-300">{line}</p>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-4">
-          <p className="text-slate-500 text-sm">Make a swap to get AI insights!</p>
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-5 text-center">
+          <p className="text-sm text-slate-400">Make a swap to get AI insights.</p>
         </div>
       )}
 
       {!loading && wallet && (
         <button
           onClick={getAnalysis}
-          className="mt-3 w-full py-2 rounded-xl bg-violet-500/20 text-violet-400 text-xs hover:bg-violet-500/30 transition"
+          className="mt-4 min-h-11 w-full rounded-xl border border-violet-300/20 bg-violet-300/10 px-4 py-2 text-xs font-semibold text-violet-200 transition hover:bg-violet-300/15"
         >
           Refresh Analysis
         </button>

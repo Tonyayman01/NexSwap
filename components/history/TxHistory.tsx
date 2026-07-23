@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { History, ExternalLink, RefreshCw } from "lucide-react";
 
 interface Transaction {
@@ -22,22 +22,23 @@ export default function TxHistory({ wallet }: TxHistoryProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     if (!wallet) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/swap?wallet=${wallet}`);
       const data = await response.json();
       setTransactions(data.transactions || []);
-    } catch (error) {
+    } catch {
       console.error("Failed to fetch history");
     }
     setLoading(false);
-  };
+  }, [wallet]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [wallet]);
+    const timeoutId = window.setTimeout(() => fetchHistory(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchHistory]);
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
@@ -45,40 +46,41 @@ export default function TxHistory({ wallet }: TxHistoryProps) {
 
   if (!wallet) {
     return (
-      <div className="glass rounded-2xl p-6 text-center">
-        <History className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-        <p className="text-slate-500 text-sm">Connect wallet to see history</p>
+      <div className="glass rounded-2xl p-8 text-center">
+        <History className="mx-auto mb-3 h-9 w-9 text-pink-300/60" />
+        <p className="text-sm text-slate-400">Connect wallet to see history</p>
       </div>
     );
   }
 
   return (
     <div className="glass rounded-2xl p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-white flex items-center gap-2">
-          <History className="w-4 h-4 text-blue-400" />
+      <div className="mb-5 flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-bold text-white">
+          <History className="h-4 w-4 text-pink-300" />
           Swap History
         </h3>
         <button
           onClick={fetchHistory}
           disabled={loading}
-          className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition"
+          aria-label="Refresh history"
+          className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
         >
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {transactions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-slate-500 text-sm">No swaps yet</p>
-          <p className="text-slate-600 text-xs mt-1">Your swaps will appear here</p>
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] py-10 text-center">
+          <p className="text-sm text-slate-400">No swaps yet</p>
+          <p className="mt-1 text-xs text-slate-600">Successful Shelby records will appear here.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {transactions.map((tx) => (
             <div
               key={tx.id}
-              className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition"
+              className="rounded-xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-pink-300/20"
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -93,7 +95,7 @@ export default function TxHistory({ wallet }: TxHistoryProps) {
                   href={tx.explorerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg hover:bg-white/10 text-blue-400 hover:text-blue-300 transition"
+                  className="rounded-lg p-2 text-pink-300 transition hover:bg-white/10 hover:text-pink-200"
                 >
                   <ExternalLink className="w-3 h-3" />
                 </a>

@@ -1,123 +1,193 @@
-# NexSwap 🔄
-### AI Powered Decentralized Swap  Built on Shelby Protocol and aptos
+# NexSwap
 
-> Swap tokens on Aptos with every transaction permanently saved on Shelby decentralized hot storage  and get real AI insights after every swap.
+AI-powered token swap demo built with Next.js, Aptos wallet identity, and Shelby Protocol hot storage.
 
- **Live Demo:**   [nex-swapshelby.vercel.app] (https://nex-swapshelby.vercel.app)
- 
- **GitHub:** [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap)  
----
+Every successful swap record is uploaded as a JSON blob to Shelby on Shelbynet, then linked back to the user wallet for history and AI insights.
 
-## The Problem
-Most DEX swaps are anonymous and forgotten. You have no memory of your trading history, no insights on your patterns, and no ownership of your data. Centralized platforms store your data  not you.
+Live demo: [nex-swapshelby.vercel.app](https://nex-swapshelby.vercel.app)  
+GitHub: [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap)
 
-## The Solution
-NexSwap combines **decentralized swapping** with **AI-powered memory**. Every swap is stored as a verifiable blob on Shelby Protocol hot storage, tied to your Aptos wallet. The AI analyzes your swap history and gives personalized insights  data you own, forever.
+## Why NexSwap
 
----
+Most swap demos forget user activity as soon as the session ends. NexSwap keeps a verifiable memory layer:
 
-## What Makes NexSwap Different 
-
-| Feature | Traditional DEX | NexSwap |
-|---------|----------------|---------|
-| Swap History | Centralized | On Shelby decentralized 
-| AI Insights | None | After every swap |
-| Data Ownership | Platform | Your wallet |
-| Storage | Database | Shelby hot storage |
-| Retrieval Speed | Fast | ~50ms (Shelby) |
-
----
+| Feature | Traditional Swap UI | NexSwap |
+| --- | --- | --- |
+| Swap history | Local/session data | Shelby blob storage |
+| User identity | App-controlled | Aptos wallet address |
+| Storage | Centralized database | Shelby hot storage |
+| AI insights | None | OpenRouter-powered advisor |
+| Verification | App trust | Explorer-visible blob records |
 
 ## Features
 
--  **Token Swap** — Swap APT, USDC, USDT, WETH, BTC on Aptos
--  **AI Swap Advisor** — Personalized insights after every swap
--  **Shelby Storage** — Every swap saved as a verified blob on-chain
--  **Wallet Identity** — Swap history tied to your Aptos wallet
--  **Personal Dashboard** — Track your volume and swap history
--  **Millisecond Retrieval** — Shelby hot storage for instant access
--  **Verifiable** — Every swap cryptographically verified on Aptos
-
----
+- Token swap interface for APT, USDC, USDT, WETH, and BTC demo pairs
+- Aptos wallet connection with Petra wallet adapter
+- Shelby Protocol upload for each successful swap JSON record
+- Explorer link for stored Shelby blobs
+- AI Swap Advisor that analyzes recent swap activity
+- Responsive pink/violet Shelby-inspired frontend with Framer Motion animations
+- Clear error handling for missing env vars, unfunded accounts, and upload timeouts
 
 ## How It Works
 
-```
-User Swaps → Transaction Saved on Shelby → AI Analyzes History → Insights Shown
-     │                    │                        │
-  Petra Wallet      Blob on-chain            OpenRouter AI
-  (Aptos)          (Shelbynet)              (Free Models)
-```
-
----
-
-## AI Swap Advisor 
-
-After every swap the AI gives 3 personalized insights:
-
-```
-1. Single swap suggests very low recent trading activity.
-2. USDC to APT indicates a directional bet on Aptos upside.  
-3. Small-size trade implies cautious testing before larger swaps.
+```text
+User connects Petra wallet
+        |
+User submits a swap
+        |
+Next.js API creates a swap JSON record
+        |
+Server-side Shelby account uploads the blob to Shelbynet
+        |
+Frontend shows blob name + Shelby Explorer link
+        |
+AI advisor can analyze the user's recent swap history
 ```
 
----
+Important: the Petra wallet is used for user identity in the app. Shelby uploads are signed server-side with `SHELBY_ACCOUNT_PRIVATE_KEY`, so the Shelby account must be funded on Shelbynet.
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16, React 19, TailwindCSS |
-| AI Engine | OpenRouter (Free Models) |
-| Storage | Shelby Protocol SDK |
-| Blockchain | Aptos Testnet |
-| Wallet | Petra (Aptos Wallet Adapter) |
+| --- | --- |
+| Frontend | Next.js 16, React 19, Tailwind CSS |
+| Animation | Framer Motion |
+| Wallet | Aptos Wallet Adapter / Petra |
+| Storage | `@shelby-protocol/sdk` |
+| Chain | Shelbynet / Aptos |
+| AI | OpenRouter API |
 
----
-
-## Getting Started
+## Local Setup
 
 ### Prerequisites
+
 - Node.js 20+
 - npm
-- Petra Wallet browser extension
+- Petra wallet browser extension
+- Shelby API key
+- Funded Shelbynet account for server-side uploads
 
-### Installation
+### Install
+
 ```bash
 git clone https://github.com/Tonyayman01/NexSwap.git
 cd NexSwap
 npm install
 ```
 
-### Environment Setup
+### Environment Variables
+
 Create `.env.local`:
-```
-OPENROUTER_API_KEY=your_openrouter_key
-SHELBY_API_KEY=your_shelby_key
-APTOS_ACCOUNT_ADDRESS=your_aptos_address
-APTOS_PRIVATE_KEY=your_private_key
+
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key
+SHELBY_API_KEY=your_shelby_api_key
+SHELBY_ACCOUNT_ADDRESS=your_shelbynet_account_address
+SHELBY_ACCOUNT_PRIVATE_KEY=your_shelbynet_private_key
 ```
 
-### Run
+Do not expose `SHELBY_ACCOUNT_PRIVATE_KEY` in client-side code. It must stay server-side only.
+
+### Fund the Shelby Account
+
+The account in `SHELBY_ACCOUNT_ADDRESS` needs APT for transaction fees on Shelbynet. If uploads fail with `INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE`, fund that exact address.
+
+Useful links:
+
+- [Shelby Aptos Faucet](https://docs.shelby.xyz/apis/faucet/aptos)
+- [ShelbyUSD Faucet](https://docs.shelby.xyz/apis/faucet/shelbyusd)
+- [Shelby Explorer](https://explorer.shelby.xyz/shelbynet)
+
+### Run Locally
+
 ```bash
 npm run dev
 ```
 
-## Roadmap 
+Open:
 
-- [x] Token swap interface
+```text
+http://127.0.0.1:3000
+```
+
+If port `3000` is busy, use another port:
+
+```bash
+npm run dev -- --hostname 127.0.0.1 --port 3002
+```
+
+## Vercel Deployment
+
+1. Push the repo to GitHub.
+2. Import [Tonyayman01/NexSwap](https://github.com/Tonyayman01/NexSwap) into Vercel.
+3. Add these Environment Variables in Vercel Project Settings:
+
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key
+SHELBY_API_KEY=your_shelby_api_key
+SHELBY_ACCOUNT_ADDRESS=your_shelbynet_account_address
+SHELBY_ACCOUNT_PRIVATE_KEY=your_shelbynet_private_key
+```
+
+4. Redeploy after saving env vars.
+5. Test a swap and verify the blob in [Shelby Explorer](https://explorer.shelby.xyz/shelbynet).
+
+Build command:
+
+```bash
+npm run build
+```
+
+Start command:
+
+```bash
+npm run start
+```
+
+## Verification
+
+After a successful swap, the API returns:
+
+```json
+{
+  "success": true,
+  "blobName": "swaps/0xwallet/1234567890.json",
+  "explorerUrl": "https://explorer.shelby.xyz/shelbynet/account/..."
+}
+```
+
+Open `explorerUrl`, then check:
+
+```text
+Account -> Blobs -> swaps/...
+```
+
+The blob status should show `Ready`.
+
+## Troubleshooting
+
+| Error | Meaning | Fix |
+| --- | --- | --- |
+| `Missing SHELBY_API_KEY` | Server env var is missing | Add it locally or in Vercel |
+| `Missing SHELBY_ACCOUNT_PRIVATE_KEY` | Upload signer is missing | Add server-side private key |
+| `INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE` | Shelby upload signer has no APT | Fund `SHELBY_ACCOUNT_ADDRESS` |
+| `Shelby upload timed out` | Shelby network/API took too long | Retry and check account funding |
+| Wallet popup does not appear | Shelby upload is server-side | Connect wallet only identifies the user |
+
+## Roadmap
+
+- [x] Swap interface
 - [x] Shelby storage integration
-- [x] AI swap advisor
-- [x] Wallet connect (Petra)
-- [ ] Real on-chain swap (LiquidSwap DEX)
-- [ ] Swap score system
-- [ ] Cross-session AI memory
-- [ ] Multi-wallet support
+- [x] AI Swap Advisor
+- [x] Petra wallet connection
+- [x] Shelby-inspired animated frontend
+- [ ] Real on-chain swap execution
+- [ ] Cross-session history retrieval from Shelby
+- [ ] Multi-wallet analytics
 
----
+## Built for the Shelby Ecosystem
 
-## Built for the Shelby Ecosystem 
+NexSwap demonstrates a DeFi interface with a verifiable memory layer: every successful swap can be stored as a Shelby blob and inspected through the Shelby Explorer.
 
-NexSwap proves that DeFi can be smarter — every swap remembered, every pattern analyzed, all data owned by the user.
-
-Built with  by [Tonyayman01](https://github.com/Tonyayman01) — powered by [Shelby Protocol](https://shelby.xyz) on Aptos
+Built by [Tonyayman01](https://github.com/Tonyayman01), powered by [Shelby Protocol](https://shelby.xyz).

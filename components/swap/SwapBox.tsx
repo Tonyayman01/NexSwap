@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpDown,
   Settings,
@@ -12,29 +13,45 @@ import {
 } from "lucide-react";
 
 const TOKENS = [
-  { symbol: "APT", name: "Aptos", icon: "🔵", price: 8.5 },
-  { symbol: "USDC", name: "USD Coin", icon: "🔵", price: 1.0 },
-  { symbol: "USDT", name: "Tether", icon: "🔵", price: 1.0 },
-  { symbol: "WETH", name: "Wrapped ETH", icon: "🔵", price: 3200 },
-  { symbol: "BTC", name: "Bitcoin", icon: "🔵", price: 65000 },
+  { symbol: "APT", name: "Aptos", color: "from-pink-300 to-violet-300", price: 8.5 },
+  { symbol: "USDC", name: "USD Coin", color: "from-violet-300 to-amber-200", price: 1.0 },
+  { symbol: "USDT", name: "Tether", color: "from-emerald-300 to-pink-300", price: 1.0 },
+  { symbol: "WETH", name: "Wrapped ETH", color: "from-violet-300 to-fuchsia-300", price: 3200 },
+  { symbol: "BTC", name: "Bitcoin", color: "from-amber-300 to-orange-400", price: 65000 },
 ];
 
 interface SwapBoxProps {
   wallet: string;
-  onSwapSuccess?: (count: number, volume: number, swap: any) => void;
+  onSwapSuccess?: (count: number, volume: number, swap: SwapPayload) => void;
+}
+
+interface SwapPayload {
+  wallet: string;
+  fromToken: string;
+  toToken: string;
+  fromAmount: string;
+  toAmount: string;
+  slippage: string;
+  priceImpact: string;
+  fee: string;
+  timestamp: number;
+  network: string;
+  storage: string;
 }
 
 interface SwapResult {
   success: boolean;
   blobName?: string;
   explorerUrl?: string;
+  error?: string;
 }
 
 export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [fromToken, setFromToken] = useState(TOKENS[0]);
   const [toToken, setToToken] = useState(TOKENS[1]);
   const [fromAmount, setFromAmount] = useState("");
-  const [lastSwapJson, setLastSwapJson] = useState<any>(null);
+  const [lastSwapJson, setLastSwapJson] = useState<SwapPayload | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [swapResult, setSwapResult] = useState<SwapResult | null>(null);
@@ -50,7 +67,17 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
     ? ((parseFloat(fromAmount) * fromToken.price) / toToken.price).toFixed(6)
     : "";
 
-  const priceImpact = fromAmount ? (Math.random() * 0.3).toFixed(2) : "0.00";
+  const priceImpact = useMemo(() => {
+    if (!fromAmount) return "0.00";
+    const seed = `${fromAmount}-${fromToken.symbol}-${toToken.symbol}`;
+    const hash = Array.from(seed).reduce(
+      (total, char) => total + char.charCodeAt(0),
+      0
+    );
+
+    return (((hash % 30) + 1) / 100).toFixed(2);
+  }, [fromAmount, fromToken.symbol, toToken.symbol]);
+
   const fee = fromAmount ? (parseFloat(fromAmount) * 0.003).toFixed(6) : "0.00";
 
   const handleSwapTokens = () => {
@@ -84,16 +111,20 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
     setLastSwapJson(swapJson);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 50_000);
       const response = await fetch("/api/swap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(swapJson),
+        signal: controller.signal,
       });
+      window.clearTimeout(timeoutId);
 
       const data = await response.json();
       setSwapResult(data);
 
-      if (data.success) {
+      if (response.ok && data.success) {
         const newCount = swapCount + 1;
         const newVolume = totalVolume + parseFloat(fromAmount) * fromToken.price;
 
@@ -103,17 +134,23 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
         if (onSwapSuccess) {
           onSwapSuccess(newCount, newVolume, swapJson);
         }
-      }
 
-      setFromAmount("");
-    } catch {
-      setSwapResult({ success: false });
+        setFromAmount("");
+      }
+    } catch (error) {
+      setSwapResult({
+        success: false,
+        error:
+          error instanceof DOMException && error.name === "AbortError"
+            ? "Shelby upload timed out. Check SHELBY_ACCOUNT_ADDRESS balance and try again."
+            : "Could not reach the swap API.",
+      });
     }
 
     setIsSwapping(false);
   };
 
-  const TokenButton = ({ type }: { type: "from" | "to" }) => {
+  const renderTokenButton = (type: "from" | "to") => {
     const token = type === "from" ? fromToken : toToken;
     const isOpen = activeDropdown === type;
     const otherToken = type === "from" ? toToken : fromToken;
@@ -125,9 +162,11 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
             e.stopPropagation();
             setActiveDropdown(isOpen ? null : type);
           }}
-          className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 font-medium text-white transition hover:bg-white/20"
+          className="flex min-h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-semibold text-white transition hover:bg-white/20"
         >
-          <span className="text-xs font-bold">{token.icon}</span>
+          <span
+            className={`h-5 w-5 rounded-full bg-gradient-to-br ${token.color} shadow-sm`}
+          />
           <span>{token.symbol}</span>
           <ChevronDown
             className={`h-3 w-3 transition-transform ${
@@ -144,10 +183,10 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-64 rounded-2xl border border-white/10 p-4"
+              className="w-72 rounded-2xl border border-white/10 p-4"
               style={{
-                background: "#0d1220",
-                boxShadow: "0 25px 50px rgba(0,0,0,0.9)",
+                background: "#101622",
+                boxShadow: "0 25px 70px rgba(0,0,0,0.85)",
               }}
             >
               <p className="mb-3 text-sm font-bold text-white">Select Token</p>
@@ -163,9 +202,9 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
                     }}
                     className="mb-1 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-white transition hover:bg-white/10"
                   >
-                    <span className="w-10 text-center text-xs font-bold">
-                      {token.icon}
-                    </span>
+                    <span
+                      className={`h-9 w-9 rounded-full bg-gradient-to-br ${token.color}`}
+                    />
                     <div>
                       <p className="font-medium">{token.symbol}</p>
                       <p className="text-xs text-slate-400">{token.name}</p>
@@ -182,20 +221,26 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
 
   return (
     <div className="w-full">
-      <div className="glass glow-blue rounded-2xl p-6">
+      <div className="glass glow-blue shelby-panel rounded-2xl p-5 sm:p-6">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Swap</h2>
+          <div>
+            <h2 className="text-xl font-black text-white">Swap Console</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Quote tokens and persist the record to Shelby.
+            </p>
+          </div>
 
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+            aria-label="Swap settings"
+            className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-slate-400 transition hover:bg-white/10 hover:text-white"
           >
             <Settings className="h-4 w-4" />
           </button>
         </div>
 
         {showSettings && (
-          <div className="mb-4 rounded-xl border border-white/10 bg-white/5 p-3">
+          <div className="mb-4 rounded-xl border border-pink-300/15 bg-pink-300/[0.04] p-3">
             <p className="mb-2 text-xs text-slate-400">Slippage Tolerance</p>
 
             <div className="flex gap-2">
@@ -205,7 +250,7 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
                   onClick={() => setSlippage(s)}
                   className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
                     slippage === s
-                      ? "bg-blue-500 text-white"
+                      ? "bg-pink-300 text-slate-950"
                       : "bg-white/5 text-slate-400 hover:text-white"
                   }`}
                 >
@@ -216,7 +261,7 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
           </div>
         )}
 
-        <div className="swap-input mb-2 overflow-hidden p-4">
+        <div className="swap-input mb-2 overflow-hidden p-4 sm:p-5">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs text-slate-400">From</span>
             <span className="text-xs text-slate-400">Balance: 0.00</span>
@@ -228,10 +273,10 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
               placeholder="0.0"
               value={fromAmount}
               onChange={(e) => setFromAmount(e.target.value)}
-              className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-3xl font-black text-white outline-none placeholder-slate-600"
             />
 
-            <TokenButton type="from" />
+            {renderTokenButton("from")}
           </div>
 
           {fromAmount && (
@@ -244,13 +289,14 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
         <div className="my-2 flex justify-center">
           <button
             onClick={handleSwapTokens}
-            className="glass rounded-xl p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+            aria-label="Invert token pair"
+            className="glass rounded-xl p-3 text-slate-400 transition hover:bg-white/10 hover:text-white"
           >
             <ArrowUpDown className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="swap-input mb-4 overflow-hidden p-4">
+        <div className="swap-input mb-4 overflow-hidden p-4 sm:p-5">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs text-slate-400">To</span>
             <span className="text-xs text-slate-400">Balance: 0.00</span>
@@ -262,10 +308,10 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
               placeholder="0.0"
               value={toAmount}
               readOnly
-              className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-3xl font-black text-white outline-none placeholder-slate-600"
             />
 
-            <TokenButton type="to" />
+            {renderTokenButton("to")}
           </div>
 
           {toAmount && (
@@ -276,7 +322,7 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
         </div>
 
         {fromAmount && (
-          <div className="mb-4 space-y-1 rounded-xl bg-white/5 p-3">
+          <div className="mb-4 space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-4">
             <div className="flex justify-between text-xs">
               <span className="text-slate-400">Rate</span>
               <span className="text-white">
@@ -304,10 +350,16 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
           </div>
         )}
 
-        <button
+        <motion.button
           onClick={handleSwap}
           disabled={!fromAmount || !wallet || isSwapping}
-          className="btn-primary flex w-full items-center justify-center gap-2 py-4 text-white"
+          whileHover={
+            !shouldReduceMotion && fromAmount && wallet && !isSwapping
+              ? { scale: 1.01, y: -2 }
+              : undefined
+          }
+          whileTap={!shouldReduceMotion ? { scale: 0.98 } : undefined}
+          className="btn-primary flex min-h-14 w-full items-center justify-center gap-2 px-4 py-4 text-white"
         >
           {isSwapping ? (
             <>
@@ -315,30 +367,30 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
               Swapping...
             </>
           ) : !wallet ? (
-            "Connect Wallet to Swap"
+            "Connect Wallet"
           ) : !fromAmount ? (
             "Enter Amount"
           ) : (
             <>
               <Zap className="h-4 w-4" />
-              Swap {fromToken.symbol} → {toToken.symbol}
+              Swap {fromToken.symbol} to {toToken.symbol}
             </>
           )}
-        </button>
+        </motion.button>
 
         {swapResult && (
           <div
             className={`mt-4 rounded-xl border p-3 ${
               swapResult.success
-                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                : "border-red-500/20 bg-red-500/10 text-red-400"
+                ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200"
+                : "border-red-300/20 bg-red-400/10 text-red-200"
             }`}
           >
             {swapResult.success ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <CheckCircle className="h-4 w-4" />
-                  Swap Successful! Saved on Shelby
+                  Swap Successful! Stored on Shelby
                 </div>
 
                 {swapResult.blobName && (
@@ -376,7 +428,14 @@ export default function SwapBox({ wallet, onSwapSuccess }: SwapBoxProps) {
                 )}
               </div>
             ) : (
-              <p className="text-sm">Swap failed. Please try again.</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Shelby storage failed.</p>
+                {swapResult.error && (
+                  <p className="break-words text-xs opacity-80">
+                    {swapResult.error}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

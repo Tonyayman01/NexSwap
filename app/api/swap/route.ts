@@ -4,6 +4,19 @@ import { storeSwapTransaction, SwapTransaction } from "@/lib/shelby-service";
 // In-memory transaction store
 const transactions: (SwapTransaction & { blobName: string; explorerUrl: string })[] = [];
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unexpected error";
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -27,7 +40,25 @@ export async function POST(req: NextRequest) {
       network: "Aptos Testnet",
     };
 
-    const result = await storeSwapTransaction(tx);
+    let result;
+    try {
+      result = await withTimeout(
+        storeSwapTransaction(tx),
+        45_000,
+        "Shelby upload timed out after 45 seconds. Check the server account balance and try again."
+      );
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      console.error("Shelby storage failed:", message);
+      return NextResponse.json(
+        {
+          success: false,
+          error: message,
+          txId: tx.id,
+        },
+        { status: 502 }
+      );
+    }
 
     // Store in memory
     transactions.unshift({ ...tx, blobName: result.blobName, explorerUrl: result.explorerUrl });
@@ -38,11 +69,10 @@ export async function POST(req: NextRequest) {
       blobName: result.blobName,
       explorerUrl: result.explorerUrl,
       txId: tx.id,
-      simulated: result.simulated,
     });
 
-  } catch (error: any) {
-    console.error("Swap API Error:", error.message);
+  } catch (error: unknown) {
+    console.error("Swap API Error:", getErrorMessage(error));
     return NextResponse.json({ error: "Swap failed" }, { status: 500 });
   }
 }
