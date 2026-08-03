@@ -62,7 +62,7 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
     blobName,
     blobMerkleRoot: blobCommitments.blob_merkle_root,
     size: blobData.length,
-    expirationMicros,
+    expirationMicros: expirationMicros.toString() as unknown as number,
     config: provider.config,
   });
 
