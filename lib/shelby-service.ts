@@ -55,13 +55,28 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   const createRegisterBlobPayload = ShelbyBlobClient.createRegisterBlobPayload;
   ShelbyBlobClient.createRegisterBlobPayload = (params) => {
     const payload = createRegisterBlobPayload(params);
-    payload.functionArguments = payload.functionArguments.map((argument) => {
-      if (argument instanceof Uint8Array) {
-        return `0x${Buffer.from(argument).toString("hex")}`;
-      }
+    const [
+      blobNameArg,
+      expirationMicrosArg,
+      blobMerkleRootArg,
+      numChunksetsArg,
+      blobSizeArg,
+      reservedArg,
+      encodingArg,
+    ] = payload.functionArguments;
 
-      return String(argument);
-    });
+    payload.functionArguments = [
+      blobNameArg,
+      [],
+      [],
+      expirationMicrosArg,
+      blobMerkleRootArg,
+      numChunksetsArg,
+      blobSizeArg,
+      reservedArg,
+      0,
+      encodingArg,
+    ];
 
     return payload;
   };
@@ -75,7 +90,7 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
     blobData,
     signer,
     blobName,
-    expirationMicros: expirationMicros.toString() as unknown as number,
+    expirationMicros,
   });
 
   console.log("Swap stored on Shelby:", blobName);
