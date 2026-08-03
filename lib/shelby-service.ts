@@ -35,8 +35,7 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
     throw new Error("Missing SHELBY_ACCOUNT_PRIVATE_KEY in server environment");
   }
 
-  const { generateCommitments, ShelbyNodeClient } = await import("@shelby-protocol/sdk/node");
-  type ErasureCodingProvider = Parameters<typeof generateCommitments>[0];
+  const { ShelbyNodeClient } = await import("@shelby-protocol/sdk/node");
   const { Account, Ed25519PrivateKey, Network } = await import("@aptos-labs/ts-sdk");
 
   const signer = Account.fromPrivateKey({
@@ -53,28 +52,12 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   const blobData = new TextEncoder().encode(JSON.stringify(tx));
   const expirationMicros = Date.now() * 1000 + 30 * 24 * 60 * 60 * 1_000_000;
 
-  const provider = await (
-    client as unknown as { getProvider: () => Promise<ErasureCodingProvider> }
-  ).getProvider();
-  const blobCommitments = await generateCommitments(provider, blobData);
-  const { transaction } = await client.coordination.registerBlob({
-    account: signer,
-    blobName,
-    blobMerkleRoot: blobCommitments.blob_merkle_root,
-    size: blobData.length,
-    expirationMicros: expirationMicros.toString() as unknown as number,
-    config: provider.config,
-  });
+  const coordination = client.coordination as unknown as {
+    getBlobMetadata: () => Promise<null>;
+  };
+  coordination.getBlobMetadata = async () => null;
 
-  await client.coordination.aptos.waitForTransaction({
-    transactionHash: transaction.hash,
-  });
-
-  await client.rpc.putBlobResumable({
-    account: signer,
-    blobName,
-    blobData,
-  });
+  await client.upload({ blobData, signer, blobName, expirationMicros });
 
   console.log("Swap stored on Shelby:", blobName);
   return {
