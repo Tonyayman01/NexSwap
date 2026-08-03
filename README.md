@@ -152,7 +152,7 @@ After a successful swap, the API returns:
 ```json
 {
   "success": true,
-  "blobName": "swaps/0xwallet/1234567890.json",
+  "blobName": "nexswap-0xwallet-1234567890.json",
   "explorerUrl": "https://explorer.shelby.xyz/shelbynet/account/..."
 }
 ```
@@ -160,7 +160,7 @@ After a successful swap, the API returns:
 Open `explorerUrl`, then check:
 
 ```text
-Account -> Blobs -> swaps/...
+Account -> Blobs -> nexswap-...
 ```
 
 The blob status should show `Ready`.

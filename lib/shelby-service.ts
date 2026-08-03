@@ -20,18 +20,17 @@ export interface StoreResult {
   explorerUrl: string;
 }
 
-const APTOS_ACCOUNT_ADDRESS =
-  process.env.SHELBY_ACCOUNT_ADDRESS ||
-  process.env.APTOS_ACCOUNT_ADDRESS ||
-  "0x2b1abb3c4369ae67c04d4d8eb0758a7e2846a136dd48249b805fab871a974f39";
-
 const SHELBY_API_KEY = process.env.SHELBY_API_KEY || "";
 const SHELBY_ACCOUNT_PRIVATE_KEY =
   process.env.SHELBY_ACCOUNT_PRIVATE_KEY || process.env.APTOS_PRIVATE_KEY || "";
 
+function safeBlobSegment(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 24);
+}
+
 export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreResult> {
-  const blobName = `swaps/${tx.wallet.slice(0, 10)}/${tx.timestamp}.json`;
-  const explorerUrl = `https://explorer.shelby.xyz/shelbynet/account/${APTOS_ACCOUNT_ADDRESS}/blobs`;
+  const walletSegment = safeBlobSegment(tx.wallet);
+  const blobName = `nexswap-${walletSegment}-${tx.timestamp}.json`;
 
   if (!SHELBY_API_KEY) {
     throw new Error("Missing SHELBY_API_KEY in server environment");
@@ -47,6 +46,8 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   const signer = Account.fromPrivateKey({
     privateKey: new Ed25519PrivateKey(SHELBY_ACCOUNT_PRIVATE_KEY),
   });
+  const accountAddress = signer.accountAddress.toString();
+  const explorerUrl = `https://explorer.shelby.xyz/shelbynet/account/${accountAddress}/blobs`;
 
   const client = new ShelbyNodeClient({
     network: Network.SHELBYNET,
@@ -62,7 +63,7 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   return {
     success: true,
     blobName,
-    accountAddress: APTOS_ACCOUNT_ADDRESS,
+    accountAddress,
     timestamp: tx.timestamp,
     explorerUrl,
   };
