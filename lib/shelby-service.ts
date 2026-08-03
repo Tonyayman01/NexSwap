@@ -57,7 +57,12 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   };
   coordination.getBlobMetadata = async () => null;
 
-  await client.upload({ blobData, signer, blobName, expirationMicros });
+  await client.upload({
+    blobData,
+    signer,
+    blobName,
+    expirationMicros: expirationMicros.toString() as unknown as number,
+  });
 
   console.log("Swap stored on Shelby:", blobName);
   return {
