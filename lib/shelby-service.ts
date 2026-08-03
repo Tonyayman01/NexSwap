@@ -24,13 +24,8 @@ const SHELBY_API_KEY = process.env.SHELBY_API_KEY || "";
 const SHELBY_ACCOUNT_PRIVATE_KEY =
   process.env.SHELBY_ACCOUNT_PRIVATE_KEY || process.env.APTOS_PRIVATE_KEY || "";
 
-function safeBlobSegment(value: string) {
-  return value.replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 24);
-}
-
 export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreResult> {
-  const walletSegment = safeBlobSegment(tx.wallet);
-  const blobName = `nexswap-${walletSegment}-${tx.timestamp}.json`;
+  const blobName = `${tx.timestamp}`;
 
   if (!SHELBY_API_KEY) {
     throw new Error("Missing SHELBY_API_KEY in server environment");
