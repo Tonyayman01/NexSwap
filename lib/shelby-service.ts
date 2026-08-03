@@ -35,7 +35,7 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
     throw new Error("Missing SHELBY_ACCOUNT_PRIVATE_KEY in server environment");
   }
 
-  const { ShelbyNodeClient } = await import("@shelby-protocol/sdk/node");
+  const { ShelbyBlobClient, ShelbyNodeClient } = await import("@shelby-protocol/sdk/node");
   const { Account, Ed25519PrivateKey, Network } = await import("@aptos-labs/ts-sdk");
 
   const signer = Account.fromPrivateKey({
@@ -51,6 +51,20 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
 
   const blobData = new TextEncoder().encode(JSON.stringify(tx));
   const expirationMicros = Date.now() * 1000 + 30 * 24 * 60 * 60 * 1_000_000;
+
+  const createRegisterBlobPayload = ShelbyBlobClient.createRegisterBlobPayload;
+  ShelbyBlobClient.createRegisterBlobPayload = (params) => {
+    const payload = createRegisterBlobPayload(params);
+    payload.functionArguments = payload.functionArguments.map((argument) => {
+      if (argument instanceof Uint8Array) {
+        return `0x${Buffer.from(argument).toString("hex")}`;
+      }
+
+      return String(argument);
+    });
+
+    return payload;
+  };
 
   const coordination = client.coordination as unknown as {
     getBlobMetadata: () => Promise<null>;
