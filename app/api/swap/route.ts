@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storeSwapTransaction, SwapTransaction } from "@/lib/shelby-service";
+import {
+  ShelbyStorageError,
+  storeSwapTransaction,
+  SwapTransaction,
+} from "@/lib/shelby-service";
 
 // In-memory transaction store
 const transactions: (SwapTransaction & { blobName: string; explorerUrl: string })[] = [];
@@ -54,6 +58,8 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: message,
+          accountAddress:
+            error instanceof ShelbyStorageError ? error.accountAddress : undefined,
           txId: tx.id,
         },
         { status: 502 }

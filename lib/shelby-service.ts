@@ -20,6 +20,16 @@ export interface StoreResult {
   explorerUrl: string;
 }
 
+export class ShelbyStorageError extends Error {
+  accountAddress: string;
+
+  constructor(message: string, accountAddress: string) {
+    super(message);
+    this.name = "ShelbyStorageError";
+    this.accountAddress = accountAddress;
+  }
+}
+
 const SHELBY_API_KEY = process.env.SHELBY_API_KEY || "";
 const SHELBY_ACCOUNT_PRIVATE_KEY =
   process.env.SHELBY_ACCOUNT_PRIVATE_KEY || process.env.APTOS_PRIVATE_KEY || "";
@@ -86,12 +96,17 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
   };
   coordination.getBlobMetadata = async () => null;
 
-  await client.upload({
-    blobData,
-    signer,
-    blobName,
-    expirationMicros,
-  });
+  try {
+    await client.upload({
+      blobData,
+      signer,
+      blobName,
+      expirationMicros,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Shelby upload failed";
+    throw new ShelbyStorageError(message, accountAddress);
+  }
 
   console.log("Swap stored on Shelby:", blobName);
   return {
