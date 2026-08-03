@@ -67,8 +67,8 @@ export async function storeSwapTransaction(tx: SwapTransaction): Promise<StoreRe
 
     payload.functionArguments = [
       blobNameArg,
-      [],
-      [],
+      "",
+      "",
       expirationMicrosArg,
       blobMerkleRootArg,
       numChunksetsArg,
